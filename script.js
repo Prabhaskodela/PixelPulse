@@ -29,10 +29,14 @@ document.querySelectorAll("[data-query]").forEach((button) => {
 
 async function searchImages(query) {
   resultsGrid.replaceChildren();
+  resultsGrid.setAttribute("aria-busy", "true");
+  resultsGrid.innerHTML = Array.from({ length: 6 }, (_, index) =>
+    `<div class="skeleton-card" aria-hidden="true" style="--skeleton-index:${index}"><span></span><i></i></div>`
+  ).join("");
   resultsTitle.textContent = `Searching for “${query}”`;
   resultsKicker.textContent = "FINDING YOUR NEXT SPARK";
   resultCount.textContent = "";
-  statusMessage.textContent = "Looking through Wikimedia Commons…";
+  statusMessage.innerHTML = '<span class="spinner" aria-hidden="true"></span> Looking through Wikimedia Commons…';
   statusMessage.className = "status-message loading";
 
   const params = new URLSearchParams({
@@ -58,6 +62,8 @@ async function searchImages(query) {
     const images = pages.filter((page) => page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url);
 
     if (images.length === 0) {
+      resultsGrid.replaceChildren();
+      resultsGrid.setAttribute("aria-busy", "false");
       statusMessage.textContent = `No images found for “${query}”. Try another search.`;
       statusMessage.className = "status-message";
       resultsTitle.textContent = "No images this time";
@@ -65,12 +71,15 @@ async function searchImages(query) {
     }
 
     images.forEach((page) => resultsGrid.append(createImageCard(page)));
+    resultsGrid.setAttribute("aria-busy", "false");
     resultsTitle.textContent = `A little more ${query}`;
     resultCount.textContent = `${images.length} ${images.length === 1 ? "image" : "images"}`;
     statusMessage.textContent = "Select an image to see it in full on Wikimedia Commons.";
     statusMessage.className = "status-message";
   } catch (error) {
     console.error(error);
+    resultsGrid.replaceChildren();
+    resultsGrid.setAttribute("aria-busy", "false");
     resultsTitle.textContent = "We hit a small snag";
     statusMessage.textContent = "Image search is unavailable right now. Please try again in a moment.";
     statusMessage.className = "status-message";
@@ -118,4 +127,5 @@ function stripHtml(value) {
   const parser = new DOMParser();
   return parser.parseFromString(value, "text/html").body.textContent.trim();
 }
+
 
